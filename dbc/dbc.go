@@ -15,9 +15,10 @@ var conn redis.Conn
 var err error
 
 func init() {
-	db, err = sql.Open("mysql", "user:password@tcp(ip:port)/database?charset=utf8")
+	db, err = sql.Open("mysql", "")
 	checkErr(err)
-	conn, err = redis.Dial("tcp", "addr")
+	conn, err = redis.Dial("", "")
+	checkErr(err)
 }
 
 func checkErr(err error) {
