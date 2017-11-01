@@ -54,19 +54,7 @@ func SendTextTo(num string) (string, error) {
 // 无需考虑线程安全问题
 var count int
 
-func genConfirmCode() string {
-	count++
-	// 因为种子会改变，所以才有线程安全问题
-	rand.Seed(time.Now().UnixNano())
-	add1 := rand.Intn(5) + 4
-	add2 := rand.Intn(7876) + 1
-	add3 := count % 1000
-	plus := add1*10000 + add2 + add3
-	// string 会解码数据
-	return strconv.Itoa(plus)
-}
-
-// for test
+// for produce
 // func genConfirmCode() string {
 // 	count++
 // 	// 因为种子会改变，所以才有线程安全问题
@@ -76,6 +64,19 @@ func genConfirmCode() string {
 // 	add3 := count % 1000
 // 	plus := add1*10000 + add2 + add3
 // 	// string 会解码数据
-// 	strconv.Itoa(plus)
-// 	return "33305"
+// 	return strconv.Itoa(plus)
 // }
+
+// for test
+func genConfirmCode() string {
+	count++
+	// 因为种子会改变，所以才有线程安全问题
+	rand.Seed(time.Now().UnixNano())
+	add1 := rand.Intn(5) + 4
+	add2 := rand.Intn(7876) + 1
+	add3 := count % 1000
+	plus := add1*10000 + add2 + add3
+	// string 会解码数据
+	strconv.Itoa(plus)
+	return "33305"
+}

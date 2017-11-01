@@ -5,14 +5,11 @@ import (
 	"encoding/json"
 	"github.com/valyala/fasthttp"
 	"log"
-	"strings"
 	"time"
 	"gos/dbc"
 	"gos/tparty"
+	"gos/model"
 	// for temp blocks
-	"io"
-	"crypto/rand"
-	"encoding/base64"
 )
 
 
@@ -32,11 +29,9 @@ const (
 
 // 这些应该使用redis数据库
 var numToCode map[string]string
-var sesManager map[string]string
 
 func init() {
 	numToCode = make(map[string]string)
-	sesManager = make(map[string]string)
 }
 
 // UserRegister user register REST API NOT view function
@@ -178,11 +173,12 @@ func UserLogin(ctx *fasthttp.RequestCtx) {
 		respData, _ := json.Marshal(map[string]string{"num": data["num"], "nickname": info[1]})
 		ctx.Response.AppendBody(respData)
 		// set cookie and session related
-		sid := genSessionID()
-		sesManager[sid] = data["num"] + "|" + info[1]
-		c := makeCookie("sid", sid, 3600*24*3)
+		s := model.Sessions.CreateSession()
+		s.SetKV("num", data["num"])
+		s.SetKV("nickname", info[1])
+		c := makeCookie("sid", s.GetSessionID(), 3600*24*3)
 		ctx.Response.Header.SetCookie(c)
-		log.Printf("Create session[%s] for user[%s]\n\r", sid, data["num"])
+		log.Printf("Create session[%s] for user[%s]\n\r", s.GetSessionID(), data["num"])
 		return
 	}
 	ctx.Response.Header.SetStatusCode(methodNotAllowdCode)
@@ -195,32 +191,21 @@ func ResumeSession(ctx *fasthttp.RequestCtx) {
 	ctx.Response.Header.SetContentType("application/json")
 	if ctx.Request.Header.IsGet() {
 		sid := string(ctx.Request.Header.Cookie("sid"))
-		if sid == "" || sesManager[sid] == "" {
+		s := model.Sessions.GetSessionBySid(sid)
+		if sid == "" || s == nil {
 			ctx.Response.Header.SetStatusCode(notFoundCode)
 			ctx.Response.AppendBody(httpException("No Related Session Here"))
 			return
 		}
 		ctx.Response.Header.SetStatusCode(successCode)
-		sesCont := sesManager[sid]
-		b, _ := json.Marshal(map[string]string{
-			"num":strings.Split(sesCont, "|")[0],
-			"nickname":strings.Split(sesCont, "|")[1]})
-		ctx.Response.AppendBody(b)
-		log.Printf("Reuse session[%s] for user[%s]\n\r", sid, strings.Split(sesCont, "|")[0])
+		ctx.Response.AppendBody(s.ToJSON())
+		log.Printf("Reuse session[%s] for user[%s]\n\r", s.GetSessionID(), s.GetValue("num"))
 		return
 	}
 	ctx.Response.Header.SetStatusCode(methodNotAllowdCode)
 }
 
 // temp blocks
-func genSessionID() string {
-	buf := make([]byte, 32)
-	if _, err := io.ReadFull(rand.Reader, buf); err!=nil {
-		return ""
-	}
-	return base64.StdEncoding.EncodeToString(buf)
-}
-
 func httpException(stmt string) []byte {
 	b, _ := json.Marshal([]byte(`{"error":"` + stmt +`"}`))
 	return b

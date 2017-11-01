@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 )
 
+// 暂时用不到
 type Exception struct {
 	Stmt string `json:"error"`
 }

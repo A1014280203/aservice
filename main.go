@@ -29,13 +29,32 @@ func runServer() error {
 }
 
 func main() {
-	log.Println("Server started...")
-	err := runServer()
-	if err != nil {
-		log.Fatalln("Server stoped, for " + err.Error())
-	}
+	// log.Println("Server started...")
+	// err := runServer()
+	// if err != nil {
+	// 	log.Fatalln("Server stoped, for " + err.Error())
+	// }
+	variable()
+	variable(1)
+	variable(1, 2)
 }
 
 // todo
 // 1. global logger for each request
 // 2. persistence for confirm-code and user-session
+
+// ----------------------
+
+// type People struct {
+// 	name string
+// }
+
+// func temp() *People{
+// 	var bob People
+// 	bob.name = "Bob"
+// 	return &bob
+// }
+
+// func variable(num... int)  {
+// 	log.Printf("%d\n", len(num))
+// }
