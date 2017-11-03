@@ -1,9 +1,9 @@
 package handler
 
 import (
-	"testing"
-	"github.com/valyala/fasthttp"
 	"encoding/json"
+	"github.com/valyala/fasthttp"
+	"testing"
 )
 
 /*
@@ -21,18 +21,19 @@ const (
 
 var globalCode = "33305"
 var globalSid = "sid"
+var globalJWT = ""
 
 func testSendConfirmCode(t *testing.T) {
 	var ctx fasthttp.RequestCtx
 	// supposed to succeed
 	ctx.Request.Header.SetMethod("POST")
 	ctx.Request.Header.SetContentType("application/json")
-	ctx.Request.AppendBodyString(`{"num":"`+phoneNum+`"}`)
+	ctx.Request.AppendBodyString(`{"num":"` + phoneNum + `"}`)
 	//
 	SendConfirmCode(&ctx)
 	//
 	t.Logf("===Test SendConfirmCode Result===\n")
-	if ctx.Response.Header.StatusCode() - 200 > 99{
+	if ctx.Response.Header.StatusCode()-200 > 99 {
 		t.Logf("StatusCode is %d\n", ctx.Response.Header.StatusCode())
 		t.Fatalf("Response Data is %s\n", ctx.Response.Body())
 		// os.Exit(1)
@@ -54,16 +55,16 @@ func testCheckRegisterCode(t *testing.T) {
 	ctx.Request.Header.SetMethod("GET")
 	ctx.Request.Header.SetContentType("application/json")
 	ctx.SetUserValue("num", phoneNum)
-	ctx.Request.AppendBodyString(`{"code":"`+globalCode+`"}`)
-	// 
+	ctx.Request.AppendBodyString(`{"code":"` + globalCode + `"}`)
+	//
 	CheckRegisterCode(&ctx)
 	//
 	t.Logf("===Test CheckRegisterCode Result===\n")
-	if ctx.Response.Header.StatusCode() - 200 > 99{
+	if ctx.Response.Header.StatusCode()-200 > 99 {
 		t.Logf("StatusCode is %d\n", ctx.Response.Header.StatusCode())
 		t.Fatalf("Response Data is %s\n", ctx.Response.Body())
 		// os.Exit(1)
-		
+
 	}
 	var data map[string]string
 	if err := json.Unmarshal(ctx.Response.Body(), &data); err != nil {
@@ -81,19 +82,19 @@ func testUserRegister(t *testing.T) {
 	ctx.Request.Header.SetMethod("POST")
 	ctx.Request.Header.SetContentType("application/json")
 	ctx.Request.AppendBodyString(
-		`{"num":"`+ phoneNum +`",
-			"password":"123456",
-			"nickname":"raka",
-			"code":"`+ globalCode +`"}`)
+		`{"num":"` + phoneNum + `",
+            "password":"123456",
+            "nickname":"raka",
+            "code":"` + globalCode + `"}`)
 	//
 	UserRegister(&ctx)
 	//
 	t.Logf("===Test UserRegister Result===\n")
-	if ctx.Response.Header.StatusCode() - 200 > 99{
+	if ctx.Response.Header.StatusCode()-200 > 99 {
 		t.Logf("StatusCode is %d\n", ctx.Response.Header.StatusCode())
 		t.Fatalf("Response Data is %s\n", ctx.Response.Body())
 		// os.Exit(1)
-		
+
 	}
 	var data map[string]string
 	if err := json.Unmarshal(ctx.Response.Body(), &data); err != nil {
@@ -111,17 +112,17 @@ func testUserLogin(t *testing.T) {
 	ctx.Request.Header.SetMethod("POST")
 	ctx.Request.Header.SetContentType("application/json")
 	ctx.Request.AppendBodyString(
-		`{"num":"`+ phoneNum +`",
-			"password":"123456"}`)
+		`{"num":"` + phoneNum + `",
+            "password":"123456"}`)
 	//
 	UserLogin(&ctx)
 	//
 	t.Logf("===Test UserLogin Result===\n")
-	if ctx.Response.Header.StatusCode() - 200 > 99{
+	if ctx.Response.Header.StatusCode()-200 > 99 {
 		t.Logf("StatusCode is %d\n", ctx.Response.Header.StatusCode())
 		t.Fatalf("Response Data is %s\n", ctx.Response.Body())
 		// os.Exit(1)
-		
+
 	}
 	var data map[string]string
 	if err := json.Unmarshal(ctx.Response.Body(), &data); err != nil {
@@ -132,7 +133,7 @@ func testUserLogin(t *testing.T) {
 	var c fasthttp.Cookie
 	c.SetKey("sid")
 	if !ctx.Response.Header.Cookie(&c) {
-		t.Logf("Did not find cookie[sid] after login\n")
+		t.Fatalf("Did not find cookie[sid] after login\n")
 	}
 	globalSid = string(c.Value())
 	t.Logf("-StatusCode %d:\n", ctx.Response.Header.StatusCode())
@@ -150,11 +151,11 @@ func testResumeSession(t *testing.T) {
 	ResumeSession(&ctx)
 	//
 	t.Logf("===Test ResumeSession Result===\n")
-	if ctx.Response.Header.StatusCode() - 200 > 99{
+	if ctx.Response.Header.StatusCode()-200 > 99 {
 		t.Logf("StatusCode is %d\n", ctx.Response.Header.StatusCode())
 		t.Fatalf("Response Data is %s\n", ctx.Response.Body())
 		// os.Exit(1)
-		
+
 	}
 	var data map[string]string
 	if err := json.Unmarshal(ctx.Response.Body(), &data); err != nil {
@@ -166,11 +167,67 @@ func testResumeSession(t *testing.T) {
 	t.Logf("-Body %s\n", ctx.Response.Body())
 }
 
+func testUserLoginWithJWT(t *testing.T) {
+	var ctx fasthttp.RequestCtx
+	// supposed to succeed
+	ctx.Request.Header.SetMethod("POST")
+	ctx.Request.Header.SetContentType("application/json")
+	ctx.Request.AppendBodyString(
+		`{"num":"` + phoneNum + `",
+            "password":"123456"}`)
+	//
+	UserLogin(&ctx)
+	//
+	t.Logf("===Test UserLogin Result===\n")
+	if ctx.Response.Header.StatusCode()-200 > 99 {
+		t.Logf("StatusCode is %d\n", ctx.Response.Header.StatusCode())
+		t.Fatalf("Response Data is %s\n", ctx.Response.Body())
+		// os.Exit(1)
+
+	}
+	var data map[string]string
+	if err := json.Unmarshal(ctx.Response.Body(), &data); err != nil {
+		t.Logf("StatusCode is %d\n", ctx.Response.Header.StatusCode())
+		t.Fatalf("Response Data is Not JSON Format %s\n", ctx.Response.Body())
+		// os.Exit(1)
+	}
+	token := string(ctx.Response.Header.Peek("Token"))
+	if token == "" {
+		t.Fatalf("Did not find Token returned after login\n")
+	}
+	globalJWT = token
+	t.Logf("-StatusCode: %d:\n", ctx.Response.Header.StatusCode())
+	t.Logf("-Token: %s\n", token)
+	t.Logf("-Body: %s\n", ctx.Response.Body())
+}
+
+func testResumeSessionWithJWT(t *testing.T) {
+	var ctx fasthttp.RequestCtx
+	// supposed to succeed
+	ctx.Request.Header.SetMethod("GET")
+	ctx.Request.Header.SetContentType("application/json")
+	ctx.SetUserValue("num", phoneNum)
+	ctx.Request.Header.Set("Authorization", "Bearer "+globalJWT)
+	//
+	ResumeSession(&ctx)
+	//
+	t.Logf("===Test ResumeSession Result===\n")
+	if ctx.Response.Header.StatusCode()-200 > 99 {
+		t.Logf("StatusCode is %d\n", ctx.Response.Header.StatusCode())
+		t.Fatalf("Response  is %s\n", ctx.Response.Body())
+		// os.Exit(1)
+	}
+	t.Logf("-StatusCode %d:\n", ctx.Response.Header.StatusCode())
+}
 
 func Test_registe_login_reuseSession(t *testing.T) {
-	testSendConfirmCode(t)
-	testCheckRegisterCode(t)
-	testUserRegister(t)
-	testUserLogin(t)
-	testResumeSession(t)
+	// testSendConfirmCode(t)
+	// testCheckRegisterCode(t)
+	// testUserRegister(t)
+	// test session
+	// testUserLogin(t)
+	// testResumeSession(t)
+	// test JWT
+	testUserLoginWithJWT(t)
+	testResumeSessionWithJWT(t)
 }

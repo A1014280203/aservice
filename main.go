@@ -5,6 +5,8 @@ import (
 	"github.com/valyala/fasthttp"
 	"log"
 	"gos/handler"
+	//
+	"encoding/base64"
 )
 
 func registerURL() *fasthttprouter.Router{
@@ -34,9 +36,6 @@ func main() {
 	// if err != nil {
 	// 	log.Fatalln("Server stoped, for " + err.Error())
 	// }
-	variable()
-	variable(1)
-	variable(1, 2)
 }
 
 // todo

@@ -4,9 +4,6 @@ import (
 	"encoding/json"
 	"gos/dbc"
 	"time"
-	"io"
-	"crypto/rand"
-	"encoding/base64"
 )
 
 func init() {
@@ -29,11 +26,12 @@ func (s *Session) updateAccessRecord() {
 }
 
 func genSessionID() string {
-	buf := make([]byte, 32)
-	if _, err := io.ReadFull(rand.Reader, buf); err!=nil {
-		return ""
-	}
-	return base64.StdEncoding.EncodeToString(buf)
+	// buf := make([]byte, 32)
+	// if _, err := io.ReadFull(rand.Reader, buf); err!=nil {
+	// 	return ""
+	// }
+	// return base64.URLEncoding.EncodeToString(buf)
+	return genRandomBase64Str(32)
 }
 
 // GetSessionID 返回会话ID
@@ -210,16 +208,6 @@ func (sm *SessionManager) Save(s *Session) {
 	sm.push(s)
 }
 
-// createSessionManager 启动会话管理程序
-// 初始化结构体中的各个参数
-func createSessionManager() SessionManager {
-	var sm SessionManager
-	sm.storage = make(map[string]*Session)
-	sm.deltaSec = 3600 * 24
-	sm.ttl = 3600 * 24 * 2
-	return sm
-}
-
 // CreateSession 创建会话，并返回会话指针
 func (sm *SessionManager) CreateSession() *Session {
 	var s Session
@@ -229,4 +217,14 @@ func (sm *SessionManager) CreateSession() *Session {
 	s.buf = make(map[string]string)
 	sm.push(&s)
 	return &s
+}
+
+// createSessionManager 启动会话管理程序
+// 初始化结构体中的各个参数
+func createSessionManager() SessionManager {
+	var sm SessionManager
+	sm.storage = make(map[string]*Session)
+	sm.deltaSec = 3600 * 24
+	sm.ttl = 3600 * 24 * 2
+	return sm
 }
