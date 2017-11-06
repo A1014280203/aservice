@@ -27,7 +27,7 @@ func SendTextTo(num string) (string, error) {
 	var req fasthttp.Request
 	var resp fasthttp.Response
 	req.Header.SetMethod("POST")
-	token := "4q07FNCDKKZKx5g83nXjIJwSVn4yIl"
+	token := ""
 	req.Header.Set("Authorization", token)
 	req.Header.SetRequestURI(SendTextURI)
 	req.Header.SetContentType("application/json")
