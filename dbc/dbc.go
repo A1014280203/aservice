@@ -15,11 +15,10 @@ var conn redis.Conn
 var err error
 
 func init() {
-	db, err = sql.Open("mysql", "root:1014280203qq@tcp(115.159.34.131:3306)/goweb?charset=utf8")
+	db, err = sql.Open("mysql", "")
 	checkErr(err)
-	conn, err = redis.Dial("tcp", "123.206.214.238:6379")
+	conn, err = redis.Dial("", "")
 	checkErr(err)
-	// 检查pong?
 }
 
 func checkErr(err error) {
