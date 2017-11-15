@@ -29,10 +29,10 @@ const (
 )
 
 // 这些应该使用redis数据库
-var numToCode map[string]string
+var numToCode model.Codes
 
 func init() {
-	numToCode = make(map[string]string)
+	
 }
 
 // UserRegister user register REST API NOT view function
@@ -46,7 +46,7 @@ func UserRegister(ctx *fasthttp.RequestCtx) {
 		if err := JSONDecode(ctx, &data);err != nil{
 			return
 		}
-		if data["num"] == "" || data["password"] == "" || data["code"] != numToCode[data["num"]] {
+		if data["num"] == "" || data["password"] == "" || data["code"] != numToCode.Get(data["num"]) {
 			log.Printf("Receive bad register data %v\n", data)
 			ctx.Response.Header.SetStatusCode(formatErrorCode)
 			ctx.Response.AppendBody(httpException("Invalid Filed Found"))
@@ -99,7 +99,7 @@ func SendConfirmCode(ctx *fasthttp.RequestCtx) {
 			ctx.Response.AppendBodyString(internalError)
 			return
 		}
-		numToCode[data["num"]] = code
+		numToCode.Set(data["num"], code, 3600)
 		ctx.Response.Header.SetStatusCode(asyncSuccessCode)
 		ctx.Response.AppendBody(ctx.Request.Body())
 		return
@@ -108,29 +108,32 @@ func SendConfirmCode(ctx *fasthttp.RequestCtx) {
 }
 
 // CheckRegisterCode requires 
-// /codes/{num}
+// /codes?num={num}&code={code}
 // {"code": confirm code}
 func CheckRegisterCode(ctx *fasthttp.RequestCtx) {
 	ctx.Response.Header.SetContentType("application/json")
 	if ctx.Request.Header.IsGet() {
-		var data map[string]string
-		num := ctx.UserValue("num").(string)
-		if err := JSONDecode(ctx, &data); err != nil {
-			return
-		}
-		if num == "" || data["code"] == "" {
-			log.Printf("Receive bad code check data %v\n", data)
+		num := string(ctx.QueryArgs().Peek("num"))
+		code := string(ctx.QueryArgs().Peek("code"))
+		if num == "" || code == "" {
+			log.Printf("Receive bad code check data(num=%s, code=%s)\n", num, code)
 			ctx.Response.Header.SetStatusCode(formatErrorCode)
 			ctx.Response.AppendBody(httpException("Empty Filed Found"))
 			return
 		}
-		if numToCode[num] != data["code"] {
+		if numToCode.Get(num) == "" {
+			ctx.Response.Header.SetStatusCode(notFoundCode)
+			ctx.Response.AppendBody(httpException("Comfirm Code has been expired"))
+			return 
+		}
+		if numToCode.Get(num) != code {
 			ctx.Response.Header.SetStatusCode(unauthorizedCode)
 			ctx.Response.AppendBody(httpException("Comfirm Failed"))
 			return 
 		}
 		ctx.Response.Header.SetStatusCode(successCode)
 		ctx.Response.AppendBody(ctx.Request.Body())
+		numToCode.More(num, 60*5)
 		return
 	}
 	ctx.Response.Header.SetStatusCode(methodNotAllowdCode)
@@ -193,8 +196,9 @@ func UserLogin(ctx *fasthttp.RequestCtx) {
 }
 
 // ResumeSession allows user to login with cookie key 'sid'
-// URI: /session/{num} GET
-// Note: the var {num} is just to let the logger know who called this interface. It won't be checked.
+// URI: /sessions?num={num} GET
+// Note: the query argument {num} is just to let the logger know who called this interface. It won't be checked.
+// logger is waiting to do
 func ResumeSession(ctx *fasthttp.RequestCtx) {
 	ctx.Response.Header.SetContentType("application/json")
 	if ctx.Request.Header.IsGet() {
@@ -212,24 +216,24 @@ func ResumeSession(ctx *fasthttp.RequestCtx) {
 		// 现在使用JWT
 		
 		log.Printf("header: %s\n", ctx.Request.Header.Header())
-		auth := string(ctx.Request.Header.Peek("Authorization"))
+		auth := string(ctx.Request.Header.Peek("Authentication"))
 		log.Printf("auth: %s\n", auth)
 		if auth == "" {
 			ctx.Response.Header.SetStatusCode(unauthorizedCode)
-			ctx.Response.AppendBody(httpException("Authorization cannot be empty"))
+			ctx.Response.AppendBody(httpException("Authentication cannot be empty"))
 			return
 		}
 		parts := strings.Split(auth, " ")
 		if len(parts) != 2 {
 			ctx.Response.Header.SetStatusCode(formatErrorCode)
-			ctx.Response.AppendBody(httpException("Authorization content format error"))
+			ctx.Response.AppendBody(httpException("Authentication content format error"))
 			return
 		}
 		dsrp := parts[0]
 		jwt := parts[1]
 		if dsrp != "Bearer" {
 			ctx.Response.Header.SetStatusCode(formatErrorCode)
-			ctx.Response.AppendBody(httpException("Authorization begins with 'Bearer '."))
+			ctx.Response.AppendBody(httpException("Authentication begins with 'Bearer '."))
 			return
 		}
 		if !model.JWTManager.ValidJWT(jwt) {
